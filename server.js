@@ -4,9 +4,7 @@ var fs = require('fs')
   , http = require('http')
   , express = require('express')
   , bodyParser = require('body-parser')
-  , compression = require('compression')
-  , morgan = require('morgan')
-  , routes = require('./routes');
+  , compression = require('compression');
 
 // if(cluster.isMaster) {
 //   // Create a worker for each CPU
@@ -33,24 +31,22 @@ app.set('view engine', 'pug');
 
 app.set('trust proxy', true);
 
-app.use(morgan(':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" ":response-time"'));
-
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 app.use(compression());
 
 
 // setup static directory
-app.use(express.static(path.join(__dirname,'public')));
+app.use(express.static(path.join(__dirname,'dist')));
 
-app.use(routes);
+app.get('/', (req,res) => res.render('index'));
+app.get('/todo', (req,res) => res.render('todo'));
 
 // global error handler
 app.use(function (error, req, res, next) {
   if (!error) {
     next();
   } else {
-    req.app.locals.logger.error("[500] Error: ", error.stack);
     res.status(500).render('error');
   }
 });

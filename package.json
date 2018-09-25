@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "env buildTarget=prod node_modules/.bin/rollup -c",
+    "dev": "node_modules/.bin/rollup -c -w",
+    "server": "node server"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +16,15 @@
     "compression": "^1.7.3",
     "express": "^4.16.3",
     "morgan": "^1.9.1",
-    "pug": "^2.0.3"
+    "pug": "^2.0.3",
+    "simplebind-redux-devtools": "0.0.1",
+    "simplebind.js": "2.0.0-alpha2"
+  },
+  "devDependencies": {
+    "rollup": "^0.66.2",
+    "rollup-plugin-buble": "^0.19.2",
+    "rollup-plugin-commonjs": "^9.1.0",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-plugin-uglify": "^6.0.0"
   }
 }
