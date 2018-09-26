@@ -43,7 +43,7 @@ simpleBind.registerEvent('removeItem',function(evt,todoID){
 
 simpleBind.registerEvent('removeCompleted',function(evt){
 	let initialCount = todoStore.state.tasks.length; 
-	todoStoroe.do('removeCompleted');
+	todoStore.do('removeCompleted');
 	if(initialCount != todoStore.state.tasks.length) todoStore.commit();
 }); 
 

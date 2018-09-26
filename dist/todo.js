@@ -1076,7 +1076,7 @@
 
   lib.registerEvent('removeCompleted',function(evt){
   	var initialCount = todoStore.state.tasks.length; 
-  	todoStoroe.do('removeCompleted');
+  	todoStore.do('removeCompleted');
   	if(initialCount != todoStore.state.tasks.length) { todoStore.commit(); }
   }); 
 
