@@ -9,7 +9,7 @@ append neck
 block body
   h1 Todo List
   form(data-simpleevent='submit:addNewItem:todo.newItem')
-    input(type='text', data-simplebindvalue='todo.newItem.text')
+    input(type='text', data-simplebindvalue='todo.newItem.description')
     select(data-simplebindvalue='todo.newItem.priority')
       option(value='low') Low
       option(value='medium') Med
