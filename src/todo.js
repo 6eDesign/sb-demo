@@ -1,4 +1,5 @@
 import simpleBind from 'simplebind.js';
+import './lib/simplebindclass';
 import 'simplebind-redux-devtools';
 
 var todoObj = { 
@@ -45,7 +46,8 @@ simpleBind.registerEvent('addNewItem',function(evt,newItem){
 	}
 }); 
 
-var taskIsNot = function(key,val) { return function(task) { return task[key] !== val; }};
+var taskIs = (key,val) => task => task[key] === val;
+var taskIsNot = (key,val) => task => task[key] !== val;
 
 simpleBind.registerEvent('removeItem',function(evt,todoID){
 	console.log('removing',todoObj);

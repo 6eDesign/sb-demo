@@ -2,7 +2,7 @@ extends layouts/default
 
 append neck
   style(type="text/css").
-    .complete span {
+    .completed-class span {
       text-decoration: line-through;
     }
 
@@ -16,7 +16,10 @@ block body
       option(value='high') High
     button(type='submit') + Add Item
   ul(data-simplerepeat='task:todo.tasks')
-    li(data-simplebindhandler='taskCompletedHandler:task.completed')
+    //- data-simplebindhandler='taskCompletedHandler:task.completed'
+    li(
+      data-simplebindclass='completed-class some-other-class:task.completed'
+    )
       // The inside of a repeat needs to contain a single node on the base level like this.
       button(data-simpleevent='click:removeItem:task.id') remove
       label
