@@ -963,13 +963,15 @@
 
   var defaults = { 
     middleware: [], 
-    methods: {}
   }; 
+
+  var watchers = { }; 
 
   function Store(name,state,conf) {
     if ( conf === void 0 ) conf={};
    
     if(!(this instanceof Store)) { return new Store(name,state,conf); } 
+    watchers[name] = this.externalStoreChange.bind(this); 
     this.name = name;
     this.state = state; 
     this.conf = Object.keys(defaults).reduce(function (obj,key) {
@@ -978,66 +980,130 @@
     },{});
     return this;
   }
-  Store.prototype.commit = function() { 
-    lib.bind(this.name,this.state);
+  Store.prototype.externalStoreChange = function(obj) { 
+    this.state = obj;
+    this.runMiddleware();
   }; 
 
-  Store.prototype.do = function(action) {
-    var args = [], len = arguments.length - 1;
-    while ( len-- > 0 ) args[ len ] = arguments[ len + 1 ];
+  Store.prototype.runMiddleware = function() {
+    var this$1 = this;
    
-    if(typeof this.conf.methods[action] != 'function') ;
-    this.conf.methods[action].apply(this,args);
+    this.conf.middleware.reduce(function (state,mw) { return mw.call(this$1,state); }, this.state);
     return this;
   };
 
-  var initialState = {
-  	newItem: {
-  		description: '', 
-  		priority: 'low'
-  	}, 
-  	tasks: []
-  }; 
+  Store.prototype.commit = function() { 
+    this.runMiddleware();
+    lib.bind(this.name,this.state);
+    return this;
+  };
+
+  function extendStore(child) { 
+  	child.prototype = Object.create(Store.prototype);
+  	child.prototype.constructor = child;
+  }
+  lib.registerPlugin({
+    name: 'simplebindStore',
+    preBind: function(objName,obj) { 
+      if(watchers[objName]) { watchers[objName](obj); }
+      return obj;
+    }
+  });
+
+  function TodoStore(name,conf) { 
+  	if(!(this instanceof TodoStore)) { return new TodoStore(name,conf); }
+  	var initialState = {
+  		newItem: {
+  			description: '', 
+  			priority: 'low'
+  		}, 
+  		visibilityFilter: 'all',
+  		tasks: []
+  	};
+  	Store.call(this,name,initialState,conf);
+  	return this;
+  }
+  extendStore(TodoStore);
+
   var taskIsNot = function (key,val) { return function (task) { return task[key] !== val; }; };
-  var getID = function () { return new Date().getTime(); };
+  var taskIs = function (key,val) { return function (task) { return task[key] === val; }; };
 
-  var storeOptions =  { 
-  	methods: { 
-  		addTodo: function addTodo(newItem, id) {
-  			if ( id === void 0 ) id=getID();
+  // chainable proto methods:
+  TodoStore.prototype.addTodo = function(newItem, id) {
+  	if ( id === void 0 ) id=this.getNewId();
    
-  			this.state.tasks.push({
-  				id: id,
-  				completed: newItem.completed || false,
-  				priority: newItem.priority,
-  				description: newItem.description
-  			});
-  			return this;
-  		}, 
-  		addTodos: function addTodos(todos) {
-  			var this$1 = this;
+  	this.state.tasks.push({
+  		id: id,
+  		completed: newItem.completed || false,
+  		priority: newItem.priority,
+  		description: newItem.description
+  	});
+  	return this;
+  };
 
-  			todos.forEach(function (todo,i) { return this$1.do('addTodo',todo, getID() + i); });
-  			return this;
-  		},
-  		clearNewItem: function clearNewItem() { 
-  			this.state.newItem.description = '';
-  			return this;
-  		}, 
-  		removeCompleted: function removeCompleted() { 
-  			this.state.tasks = this.state.tasks.filter(taskIsNot('completed',true));		
-  			return this;
-  		}, 
-  		removeByID: function removeByID(id) { 
-  			this.state.tasks = this.state.tasks.filter(taskIsNot('id',id));
-  			return this;
-  		}
-  	}
+  TodoStore.prototype.addTodos = function(todos) {
+  	var this$1 = this;
+
+  	todos.forEach(function (todo,i) { return this$1.addTodo(todo, this$1.getNewId() + i); });
+  	return this;
+  };
+
+  TodoStore.prototype.clearNewItem = function() { 
+  	this.state.newItem.description = '';
+  	return this;
+  };
+
+  TodoStore.prototype.removeCompleted = function() { 
+  	this.state.tasks = this.state.tasks.filter(taskIsNot('completed',true));		
+  	return this;
+  };
+
+  TodoStore.prototype.removeByID = function(id) { 
+  	this.state.tasks = this.state.tasks.filter(taskIsNot('id',id));
+  	return this;
+  };
+
+  // non-chainable proto methods: 
+  TodoStore.prototype.getTodoCount = function() { 
+  	return this.state.tasks.length;
   }; 
 
-  var todoStore = Store('todo', initialState, storeOptions);
+  TodoStore.prototype.getNewId = function() { 
+  	return new Date().getTime();
+  }; 
 
-  todoStore.do('addTodos', [ 
+  TodoStore.prototype.getCompletedCount = function() { 
+  	return this.state.tasks.filter(taskIs('completed',true)).length;
+  }; 
+
+  var todoStore = TodoStore('todo',{
+  	middleware: [
+  		function(state) { 
+  			state.completedCount = this.getCompletedCount();
+  			state.activeCount = this.getTodoCount() - state.completedCount;
+  			return state;
+  		}, 
+  		function(state) { 
+  			state.tasks.forEach(function (t) { return t.isHighPriority = t.priority == 'high'; });
+  			return state;
+  		}, 
+  		function(state) { 
+  			switch(state.visibilityFilter) { 
+  				case 'complete': 
+  				case 'incomplete': 
+  					state.visibleTasks = state.tasks.filter(taskIs('completed',state.visibilityFilter == 'complete' ? true : false));
+  					break; 
+  				case 'all': 
+  				default: 
+  					state.visibleTasks = state.tasks;
+  					break;
+  			}
+  			return state;
+  		}
+  	]
+  });
+
+  var initialTodos = [ 
   	{ 
   		id: new Date().getTime(),
   		description: 'use rollup to build simplebind.js', 
@@ -1059,29 +1125,33 @@
   		completed: true, 
   		priority: 'high'
   	}
-  ]);
+  ]; 
 
   lib.registerEvent('addNewItem',function(evt,newItem){
   	evt.preventDefault();
   	if(!newItem.description) { return; }
-  	todoStore.do('addTodo', newItem)
-  		.do('clearNewItem')
+  	todoStore
+  		.addTodo(newItem)
+  		.clearNewItem()
   		.commit();
   }); 
 
-
   lib.registerEvent('removeItem',function(evt,todoID){
-  	todoStore.do('removeByID',todoID).commit();
+  	todoStore
+  		.removeByID(todoID)
+  		.commit();
   });
 
   lib.registerEvent('removeCompleted',function(evt){
-  	var initialCount = todoStore.state.tasks.length; 
-  	todoStore.do('removeCompleted');
-  	if(initialCount != todoStore.state.tasks.length) { todoStore.commit(); }
+  	var initialCount = todoStore.getTodoCount();
+  	todoStore.removeCompleted();
+  	if(initialCount != todoStore.getTodoCount()) { todoStore.commit(); }
   }); 
 
   var init$1 = function(){ 
-  	todoStore.commit();
+  	todoStore
+  		.addTodos(initialTodos)
+  		.commit();
   };
 
   document.addEventListener('DOMContentLoaded',init$1);

@@ -2,40 +2,114 @@ extends layouts/default
 
 append neck
   style(type="text/css").
+    ul {
+      list-style-type: none;
+      padding: 0; 
+    }
+
+    li { 
+      padding: 10px 20px;
+      line-height: 30px;
+      border-bottom: 5px solid #eee;
+      background-color: #ddd;
+      color: #666;
+    }
+
+    .priority { 
+      float: right;
+    }
+
+    .priority input { 
+      margin-left: 19px;
+    }
+
     .completed-class span {
       text-decoration: line-through;
+    }
+
+    .high-priority { 
+      background: rgba(255,0,0,.1);
+    }
+
+    body { 
+      background: #eee;
+      width: 75%;
+      margin: 0 auto;
+    }
+
+    select, input[type="text"], button {
+      border-width: 0;
+      padding: 10px;
+      margin-right: 8px;
+      box-shadow: 1px 1px 3px rgba(0,0,0,.14);
+    }
+
+    button { 
+      padding-left: 20px;
+      padding-right: 20px;
+      background: #333;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .filters { 
+      float: right;
+    }
+
+    label:hover { 
+      cursor: pointer;
+    }
+
+    pre { 
+      background: #333;
+      border: 1px solid #fff;
+      color: #ccc;
+      padding: 15px;
+      margin-top: 0px;
+    }
+
+    h2 { 
+      margin-top: 30px;
+      margin-bottom: 10px;
     }
 
 block body
   h1 Todo List
   form(data-simpleevent='submit:addNewItem:todo.newItem')
-    input(type='text', data-simplebindvalue='todo.newItem.description')
+    input(type='text', data-simplebindvalue='todo.newItem.description' placeholder='Enter todo here...')
     select(data-simplebindvalue='todo.newItem.priority')
       option(value='low') Low
       option(value='medium') Med
       option(value='high') High
     button(type='submit') + Add Item
-  ul(data-simplerepeat='task:todo.tasks')
-    //- data-simplebindhandler='taskCompletedHandler:task.completed'
+    .filters
+      select(data-simplebindvalue='todo.visibilityFilter')
+        option(value='all') View All
+        option(value='incomplete') View Active
+        option(value='complete') View Completed
+  ul(data-simplerepeat='task:todo.visibleTasks')
     li(
-      data-simplebindclass='completed-class some-other-class:task.completed'
+      data-simplebindclass='completed-class some-other-class:task.completed,high-priority:task.isHighPriority'
     )
       // The inside of a repeat needs to contain a single node on the base level like this.
       button(data-simpleevent='click:removeItem:task.id') remove
       label
         input(type='checkbox', data-simplebindvalue='task.completed', value='true')
         span(data-simplebind='task.description')
-      label
-        input(type='radio', data-simplebindvalue='task.priority', value='low')
-        |  Low
-      label
-        input(type='radio', data-simplebindvalue='task.priority', value='medium')
-        |  Med
-      label
-        input(type='radio', data-simplebindvalue='task.priority', value='high')
-        |  High
-  button(data-simpleevent='click:removeCompleted') Remove Completed
+      .priority 
+        label
+          input(type='radio', data-simplebindvalue='task.priority', value='low')
+          |  Low
+        label
+          input(type='radio', data-simplebindvalue='task.priority', value='medium')
+          |  Med
+        label
+          input(type='radio', data-simplebindvalue='task.priority', value='high')
+          |  High
+  button(data-simpleevent='click:removeCompleted') Remove Completed (#[span(data-simplebind='todo.completedCount')])
+  | #[span(data-simplebind='todo.activeCount')] item(s) left.
   div
+    h2 Current State: 
     pre(data-simplebind='todo.$base').
 
 append foot

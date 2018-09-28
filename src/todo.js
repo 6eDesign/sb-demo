@@ -4,7 +4,7 @@ import 'simplebind-redux-devtools';
 
 import todoStore from './lib/todoStore';
 
-todoStore.do('addTodos', [ 
+let initialTodos = [ 
 	{ 
 		id: new Date().getTime(),
 		description: 'use rollup to build simplebind.js', 
@@ -26,29 +26,33 @@ todoStore.do('addTodos', [
 		completed: true, 
 		priority: 'high'
 	}
-]);
+]; 
 
 simpleBind.registerEvent('addNewItem',function(evt,newItem){
 	evt.preventDefault();
 	if(!newItem.description) return;
-	todoStore.do('addTodo', newItem)
-		.do('clearNewItem')
+	todoStore
+		.addTodo(newItem)
+		.clearNewItem()
 		.commit();
 }); 
 
-
 simpleBind.registerEvent('removeItem',function(evt,todoID){
-	todoStore.do('removeByID',todoID).commit();
+	todoStore
+		.removeByID(todoID)
+		.commit();
 });
 
 simpleBind.registerEvent('removeCompleted',function(evt){
-	let initialCount = todoStore.state.tasks.length; 
-	todoStore.do('removeCompleted');
-	if(initialCount != todoStore.state.tasks.length) todoStore.commit();
+	let initialCount = todoStore.getTodoCount();
+	todoStore.removeCompleted();
+	if(initialCount != todoStore.getTodoCount()) todoStore.commit();
 }); 
 
 var init = function(){ 
-	todoStore.commit();
+	todoStore
+		.addTodos(initialTodos)
+		.commit();
 };
 
 document.addEventListener('DOMContentLoaded',init); 
